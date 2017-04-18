@@ -6,13 +6,13 @@ import re
 # example1
 
 # 编译成Pattern对象
-pat = re.compile(r'hello')
+pat = re.compile(r'hello\d')
 # 匹配成功
-result1 = re.match(pat, 'hello')
-result2 = re.match(pat, 'hello0 CQC!')
-result4 = re.match(pat, 'hello CQC!')
+result1 = re.match(pat, 'hello1')
+result2 = re.match(pat, 'hello2 CQC!')
+result4 = re.match(pat, 'hello3 CQC!')
 # 匹配失败
-result3 = re.match(pat, 'helo CQC!')
+result3 = re.match(pat, 'hello CQC!')
 
 # 输出pat匹配的字符串，可能为多个分组
 print result1.group()
