@@ -8,7 +8,7 @@ import random
 import lxml.html
 import requests
 import re
-import configparser
+import ConfigParser
 import base64
 
 from settings import USER_AGENT
@@ -25,11 +25,11 @@ class V2EX():
         self.passwd = ''
 
     def load_info(self):
-        config = configparser.ConfigParser()
+        config = ConfigParser.ConfigParser()
         config.read(self.configfile)
         if config.has_section('V2EX_INFO'):
-            self.username = base64.b64decode(config['V2EX_INFO']['username'])
-            self.passwd = base64.b64decode(config['V2EX_INFO']['passwd'])
+            self.username = base64.b64decode(config.get('V2EX_INFO', 'username'))
+            self.passwd = base64.b64decode(config.get('V2EX_INFO', 'passwd'))
             return True
         else:
             print('配置文件没有正确设置：%s' % self.configfile)
