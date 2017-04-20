@@ -78,6 +78,8 @@ def get_duanzi_item_re():
                          '(.*?)</h2>.*?<div.*?class="content.*?<span>(.*?)' +
                          '</span>(.*?)<div\s+class="stats.*?<i.*?number.*?>(.*?)</i>',
                          re.S)
+        # 简版的正则表达式
+        # pat2 = re.compile(r'h2>(.*?)<h2.*?content.*?<span>(.*?)</span>(.*?)number">(.*?)<i', re.S)
         html = resp.read()
         # print pat.findall(html)
         return pat.findall(html)
