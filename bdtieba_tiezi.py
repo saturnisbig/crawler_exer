@@ -3,6 +3,7 @@
 
 import re
 import urllib2, urllib
+from tools import HtmlTagStrip
 
 
 class BDTB():
@@ -49,6 +50,10 @@ class BDTB():
     def get_tiezi_content(self, html):
         pat = re.compile(r'<div id="post_content_.*?>(.*?)</div>', re.S)
         content = pat.findall(html) if pat.search(html) else []
+        tag_clear = HtmlTagStrip()
+        content = [tag_clear.clear_tags(v) for v in content]
+        # for i, v in enumerate(content):
+        #     content[i] = tag_clear.clear_tags(v)
         return content
 
     def start(self):
@@ -58,18 +63,24 @@ class BDTB():
         title = self.get_title(html)
         page_num, comment_num = self.get_page_num_and_comment_num(html)
         content = self.get_tiezi_content(html)
-        print '帖子：%s，共有页数：%s，评论数：%s\n' % (title, page_num, comment_num)
-        while page < (int(page_num) + 1):
-            print '当前页：%s，帖子内容如下：\n' % page
-            for item in content:
-                print '%s楼：%s\n----------------------------' % (index, item)
-                index += 1
-            page += 1
-            n = raw_input('输入Q结束，Enter查看下一页：')
-            if n != 'Q':
+        with open('tieba_tiezi.txt', 'w') as fd:
+            fd.write('帖子：%s，共有页数：%s，评论数：%s\n\n' % (title, page_num, comment_num))
+            while page < (int(page_num) + 1):
+                print '正在下载第%s页的内容' % page
+                fd.write('当前页：%s，帖子内容如下：\n\n' % page)
+                for item in content:
+                    fd.write('%s楼：%s\n---------------------------------------\n' % (index, item))
+                    index += 1
+                page += 1
                 html = self.get_page_content(page)
                 content = self.get_tiezi_content(html)
-        print '帖子到此结束'
+                # n = raw_input('输入Q结束，Enter查看下一页：')
+                # if n == 'Q' or n == 'q':
+                #     break
+                # else:
+                #     html = self.get_page_content(page)
+                #     content = self.get_tiezi_content(html)
+            print '帖子到此结束'
 
 
 if __name__ == "__main__":
