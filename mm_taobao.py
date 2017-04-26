@@ -55,7 +55,7 @@ def get_taobao_info(html):
 # bra、鞋码、个性域名（有个人写真照片要下载）、个人经历
 # 个人详细信息通过JS加载，这种方式读不了
 def extract_personal_page(url):
-    # 加载页面，等待页面加载完成，即出现了个性域名项目
+    # 加载页面，等待页面加载完成，即出现了爱秀链接地址
     user_id = url.split('=')[1]
     href = '//mm.taobao.com/' + user_id + '.htm'
     driver.get(url)
@@ -87,8 +87,10 @@ def extract_personal_page(url):
     s = s1 + s2 + s3 + s4 + s5 + s6
     pat = re.compile(s, re.S)
     if html:
-        for item in pat.findall(html):
-            print item[0], item[1], item[2], item[3], item[4], item[5]
+        item = pat.findall(html)[0]
+        return item[5]
+        # for item in pat.findall(html):
+        #     print item[0], item[1], item[2], item[3], item[4], item[5]
 
 # 根据年龄和出生日期计算出生年份
 def count_birthday(ds, age):
@@ -104,42 +106,40 @@ def count_birthday(ds, age):
             year = today.year - age
     return year + month + day
 
+# 提取图片地址
+def extract_img_urls(url):
+    html = download_page(url)
+    result = []
+    pat = re.compile(r'<img style="margin:.*?src="(.*?)"/?>')
+    for img_url in pat.findall(html):
+        result.append('https:' + img_url)
+    return result
+
 # 下载图片
-def download_img(url, fname):
+def save_img(url, fname):
     data = urllib2.urlopen(url).read()
     with open(fname, 'wb') as fd:
         fd.write(data)
-        print '保存照片：', name
+        print '保存照片：', fname
+
+# 下载图片列表所有图片
+def save_imgs(url_list, name):
+    base_dir = '/home/teddy/Pictures/taobao_mm/'
+    num = 1
+    print u'发现：%s 的写真照片共：%s张' % (name, str(len(url_list)))
+    for url in url_list:
+        fext = url.split('.')[-1]
+        if len(fext) > 3:
+            fext = 'jpg'
+        fname = base_dir + name + str(num) + '.' + fext
+        save_img(url, fname)
+        num += 1
 
 page_info = get_taobao_info(download_page(base_url, 1))
 for per_url, model_info in page_info:
-    print per_url
-    extract_personal_page(per_url)
-    #print model_info
-# print download_page(base_url, 1)
-# req = urllib2.Request(base_url)
-# resp = urllib2.urlopen(req)
-# html = resp.read().decode('gbk')
-#
-# s1 = r'<div class="pic s60.*?<img src="(.*?)" alt=.*?<a class="lady-name" href="(.*?)".*?>(.*?)</.*?<strong>(.*?)</strong>.*?<span>(.*?)</span>'
-# s2 = r'.*?<em>(.*?)</em>.*?<strong>(.*?)</strong>'
-# pat = re.compile(s1+s2, re.S)
-#
-# # 匹配在淘宝上的相关数据，积分，好评，导购照片，签约数
-# s3 = r'<div class="list-info.*?</span>(.*?)</dd>.*?<strong>(.*?)</'
-# s4 = r'.*?<strong>(.*?)</.*?<strong>(.*?)</.*?<strong>(.*?)</.*?'
-# s5 = r'<p class="description.*?>(.*?)</p>'
-# pat2 = re.compile(s3+s4+s5, re.S)
-#
-# for item in pat.findall(html):
-#     print item[0], item[1]
-#     print item[2], item[3]
-#     print item[4], item[5], item[6]
-#
-# for item in pat2.findall(html):
-#     print item[0]
-#     print item[1]
-#     print item[2]
-#     print item[3]
-#     print item[4]
-#     print item[5].strip()
+    mm_name = model_info[1]
+    print mm_name
+    domain_url = extract_personal_page(per_url)
+    img_url_list = extract_img_urls('https:'+domain_url)
+    save_imgs(img_url_list, mm_name)
+    break
