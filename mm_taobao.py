@@ -9,8 +9,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+import os, time
 
 from settings import USER_AGENT
+from tools import my_mkdir
 
 base_url = 'https://mm.taobao.com/json/request_top_list.htm'
 driver = webdriver.PhantomJS(executable_path='/home/teddy/code/bin/phantomjs-2.1.1-linux-x86_64/bin/phantomjs')
@@ -117,23 +119,36 @@ def extract_img_urls(url):
 
 # 下载图片
 def save_img(url, fname):
-    data = urllib2.urlopen(url).read()
-    with open(fname, 'wb') as fd:
-        fd.write(data)
-        print '保存照片：', fname
+    try:
+        resp = urllib2.urlopen(url)
+        data = resp.read()
+    except urllib2.URLError as e:
+        print('下载图片错误：' + url)
+        if hasattr(e, 'reason'):
+            print(e.reason)
+    else:
+        with open(fname, 'wb') as fd:
+            fd.write(data)
+            print '保存照片：', fname
 
 # 下载图片列表所有图片
 def save_imgs(url_list, name):
-    base_dir = '/home/teddy/Pictures/taobao_mm/'
-    num = 1
     print u'发现：%s 的写真照片共：%s张' % (name, str(len(url_list)))
+    base_dir = '/home/teddy/Pictures/taobao_mm/' + name
+    # 创建目录
+    my_mkdir(base_dir)
+    num = 1
     for url in url_list:
         fext = url.split('.')[-1]
         if len(fext) > 3:
             fext = 'jpg'
-        fname = base_dir + name + str(num) + '.' + fext
-        save_img(url, fname)
+        fname = base_dir + '/' + name + str(num) + '.' + fext
         num += 1
+        # 判断文件是否已经下载
+        if not os.path.exists(fname):
+            save_img(url, fname)
+        else:
+            print(u'已经下载了：' + fname)
 
 page_info = get_taobao_info(download_page(base_url, 1))
 for per_url, model_info in page_info:
@@ -142,4 +157,5 @@ for per_url, model_info in page_info:
     domain_url = extract_personal_page(per_url)
     img_url_list = extract_img_urls('https:'+domain_url)
     save_imgs(img_url_list, mm_name)
+    time.sleep(5)
     break
