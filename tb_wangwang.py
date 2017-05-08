@@ -7,6 +7,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from selenium.webdriver.common.keys import Keys
+import lxml.html
+import time
 
 
 driver = webdriver.Firefox()
@@ -35,7 +37,8 @@ def get_search_results(keyword):
     print('正在查询关键字')
     try:
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '#J_ItemList div.productImg-wrap'))
+            # EC.presence_of_element_located((By.CSS_SELECTOR, '#J_ItemList div.productImg-wrap'))
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.ui-page b.ui-page-num'))
         )
     except TimeoutException:
         print('查询失败')
@@ -45,10 +48,38 @@ def get_search_results(keyword):
     return html
 
 
-def scroll_window():
-    pass
+def extract_urls(doc):
+    result = []
+    tree = lxml.html.fromstring(doc)
+    # 只能加载58个，存在页面没加载完的情况
+    item_tags = tree.xpath('//div[@class="productImg-wrap"]/a')
+    print(len(item_tags))
+    for item in item_tags:
+        url = item.get('href')
+        if not url.startswith('http'):
+            url = 'https://' + url
+        result.append(url)
+    return result
+
+
+def scroll_window(url):
+    driver.get(url)
+    try:
+        js = "window.scrollTo(0, document.body.scrollHeight-" + str(1*1*100) + ')'
+        driver.execute_script(js)
+    except WebDriverException:
+        print('下拉寻找推荐宝贝时出错')
+    time.sleep(2)
+    try:
+        driver.find_element_by_css_selector('#J_TjWaterfall li')
+    except NoSuchElementException:
+        return False
+    return True
 
 
 if __name__ == "__main__":
-    html = get_result('卧室灯')
+    html = get_search_results('卧室灯')
+    urls = extract_urls(html)
+    time.sleep(2)
+    print(scroll_window(urls[0]))
     # driver.quit()
