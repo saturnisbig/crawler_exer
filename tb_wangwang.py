@@ -62,10 +62,21 @@ def extract_urls(doc):
     return result
 
 
-def scroll_window(url):
-    driver.get(url)
+def is_recommends_appear(driver, max_times=10):
+    count = 1
+    result = scroll_window(driver, count)
+    while not result:
+        count += 1
+        result = scroll_window(driver, count)
+        if count == max_times:
+            return False
+    return True
+
+
+def scroll_window(driver, count):
+    print('正在尝试第' + str(count) + '次下拉')
     try:
-        js = "window.scrollTo(0, document.body.scrollHeight-" + str(1*1*100) + ')'
+        js = "window.scrollTo(0, document.body.scrollHeight-" + str(count*count*100) + ')'
         driver.execute_script(js)
     except WebDriverException:
         print('下拉寻找推荐宝贝时出错')
@@ -77,9 +88,39 @@ def scroll_window(url):
     return True
 
 
+def scrap_recommends_page(url):
+    print('开始寻找推荐宝贝' + url)
+    try:
+        driver.get(url)
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, 'J_TabBarBox'))
+        )
+    except TimeoutException:
+        print('页面加载失败')
+        return False
+    if is_recommends_appear(driver, 5):
+        print('已经成功加载推荐宝贝信息')
+        return driver.page_source
+    else:
+        return False
+
+
+def extract_recommends_comment(doc):
+    tree = lxml.html.fromstring(doc)
+    comment_tags = tree.xpath('//ul[@id="J_TjWaterfall"]//li[p]')
+    for comment_tag in comment_tags:
+        if comment_tag.xpath('a'):
+            print('评论的商品链接：')
+            comment_tag.xpath('a')[0].get('href')
+            # p_tags = comment_tag.xpath('/p')
+            # for p in p_tags:
+            #     print '用户名：', p.xpath('b/text()')
+            #     print '评论内容：', p.xpath('text()')
+
 if __name__ == "__main__":
     html = get_search_results('卧室灯')
     urls = extract_urls(html)
     time.sleep(2)
-    print(scroll_window(urls[0]))
+    doc = scrap_recommends_page(urls[0])
+    extract_recommends_comment(doc)
     # driver.quit()
