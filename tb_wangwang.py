@@ -80,9 +80,11 @@ def scroll_window(driver, count):
         driver.execute_script(js)
     except WebDriverException:
         print('下拉寻找推荐宝贝时出错')
-    time.sleep(2)
+    # 等待实践不够长会出现部分数据加载不出来的情况
+    time.sleep(8)
     try:
         driver.find_element_by_css_selector('#J_TjWaterfall li')
+        driver.find_element_by_css_selector('#official-remind')
     except NoSuchElementException:
         return False
     return True
@@ -106,21 +108,38 @@ def scrap_recommends_page(url):
 
 
 def extract_recommends_comment(doc):
+    result = []
     tree = lxml.html.fromstring(doc)
-    comment_tags = tree.xpath('//ul[@id="J_TjWaterfall"]//li[p]')
+    comment_tags = tree.xpath('//ul[@id="J_TjWaterfall"]//li')
+    print(len(comment_tags))
+    comment_count = 0
     for comment_tag in comment_tags:
-        if comment_tag.xpath('a'):
-            print('评论的商品链接：')
-            comment_tag.xpath('a')[0].get('href')
-            # p_tags = comment_tag.xpath('/p')
-            # for p in p_tags:
-            #     print '用户名：', p.xpath('b/text()')
-            #     print '评论内容：', p.xpath('text()')
+        comments = []
+        if comment_tag.xpath('./p'):
+            # print '标签下面有评论'
+            print('-------------------------' * 3)
+            a = comment_tag.xpath('./a')[0]
+            url = a.get('href')
+            if not url.startswith('http'):
+                url = 'https:' + url
+            print(url)
+            comment_count += 1
+            for t in comment_tag.xpath('./p'):
+                username = t.xpath('./b/text()')[0]
+                comment = t.xpath('./text()')[0]
+                print username, comment
+                # print 'p标签下的内容：', t.xpath('string(.)')
+                comment_info = {'username': username, 'comment': comment}
+                comments.append(comment_info)
+            result.append({'url': url, 'comments': comments})
+    print '带评论数目：', comment_count
+    return result
 
 if __name__ == "__main__":
-    html = get_search_results('卧室灯')
-    urls = extract_urls(html)
-    time.sleep(2)
-    doc = scrap_recommends_page(urls[0])
+    # html = get_search_results('卧室灯')
+    # urls = extract_urls(html)
+    # time.sleep(2)
+    url = 'https://detail.tmall.com/item.htm?id=529724838242&skuId=3462171455381&user_id=2190232878&cat_id=50030199&is_b=1&rn=07760efb4e59cd59b1462aba5a7f0150'
+    doc = scrap_recommends_page(url)
     extract_recommends_comment(doc)
     # driver.quit()
