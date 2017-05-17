@@ -35,6 +35,15 @@ def get_search_results(keyword):
     except NoSuchElementException:
         print('没有找到搜索框')
     print('正在查询关键字')
+    if is_list_page_load():
+        html = driver.page_source
+        return html
+    else:
+        print '没有查询到物品列表'
+        driver.quit()
+
+
+def is_list_page_load():
     try:
         WebDriverWait(driver, 10).until(
             # EC.presence_of_element_located((By.CSS_SELECTOR, '#J_ItemList div.productImg-wrap'))
@@ -42,10 +51,9 @@ def get_search_results(keyword):
         )
     except TimeoutException:
         print('查询失败')
+        return False
         driver.quit()
-    print('查询成功')
-    html = driver.page_source
-    return html
+    return True
 
 
 def extract_urls(doc):
@@ -66,10 +74,10 @@ def is_recommends_appear(driver, max_times=10):
     count = 1
     result = scroll_window(driver, count)
     while not result:
-        count += 1
         result = scroll_window(driver, count)
         if count == max_times:
             return False
+        count += 1
     return True
 
 
@@ -129,16 +137,39 @@ def extract_recommends_comment(doc):
                 comment = t.xpath('./text()')[0]
                 print username, comment
                 # print 'p标签下的内容：', t.xpath('string(.)')
-                comment_info = {'username': username, 'comment': comment}
+                comment_info = (username, comment)
                 comments.append(comment_info)
             result.append({'url': url, 'comments': comments})
     print '带评论数目：', comment_count
     return result
 
+def get_next_page():
+    try:
+        js = 'window.scrollTo(0, document.body.scrollHeight)'
+        driver.execute_script(js)
+    except WebDriverException:
+        print '页面下拉失败'
+    try:
+        next_page = driver.find_element_by_css_selector('b.ui-page-num > a.ui-page-next')
+    except NoSuchElementException:
+        print '没找到翻页按钮'
+    else:
+        print '找到了翻页按钮，点击！'
+        next_page.click()
+    driver.implicitly_wait(5)
+    if is_list_page_load():
+        doc = driver.page_source
+        return doc
+    else:
+        print '翻页未成功'
+        return ''
+
 if __name__ == "__main__":
     # html = get_search_results('卧室灯')
     # urls = extract_urls(html)
-    # time.sleep(2)
+    # doc = get_next_page()
+    # print(extract_urls(doc))
+    time.sleep(2)
     url = 'https://detail.tmall.com/item.htm?id=529724838242&skuId=3462171455381&user_id=2190232878&cat_id=50030199&is_b=1&rn=07760efb4e59cd59b1462aba5a7f0150'
     doc = scrap_recommends_page(url)
     extract_recommends_comment(doc)
