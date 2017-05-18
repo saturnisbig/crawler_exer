@@ -4,6 +4,7 @@
 import urllib2
 import re
 import random
+import lxml.html
 
 USER_AGENT = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
@@ -28,6 +29,7 @@ USER_AGENT = [
 
 
 def get_proxy_ips(url='http://haoip.cc/tiqu.htm'):
+    # 已失效
     headers = {'User-Agent': random.choice(USER_AGENT)}
     request = urllib2.Request(url, headers=headers)
     resp = urllib2.urlopen(request)
@@ -36,6 +38,44 @@ def get_proxy_ips(url='http://haoip.cc/tiqu.htm'):
     return iplist
     # print iplist
 
+def get_ip181_proxy(url='http://www.ip181.com/'):
+    result = []
+    headers = make_header_by_file('ip181_headers.txt')
+    req = urllib2.Request(url, headers=headers)
+    resp = urllib2.urlopen(req)
+    html = resp.read()
+    tree = lxml.html.fromstring(html)
+    trs = tree.xpath('//tbody/tr[@class!="active"]')
+    for tr in trs:
+        tds = tr.xpath('./td/text()')
+        ip = tds[0].strip()
+        port = tds[1].strip()
+        anonymity = tds[2].strip()
+        https = tds[3].strip().lower().split(',')
+        if len(https) > 1:
+            scheme = https[1]
+        country = tds[5].strip()
+        proxy = (ip, port, anonymity, scheme, country)
+        result.append(proxy)
+    return result
+
+
+def make_header_by_file(fname='headers.txt'):
+    headers = {}
+    with open(fname, 'r') as fd:
+        for line in fd:
+            index = line.find(':')
+            if index != -1:
+                k = line[0:index]
+                v = line[index+1:]
+                headers[k] = v.strip()
+    return headers
+
+
 if __name__ == "__main__":
-    url = 'http://haoip.cc/tiqu.htm'
-    get_proxy_ips(url)
+    # url = 'http://haoip.cc/tiqu.htm'
+    # get_proxy_ips(url)
+    # headers = make_header_by_file()
+    # for k, v in headers.items():
+    #     print k, v
+    print(get_ip181_proxy())
