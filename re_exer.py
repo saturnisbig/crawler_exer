@@ -36,7 +36,7 @@ print 'm.lastindex:', m.lastindex
 print 'm.lastgroup:', m.lastgroup
 # 一个或多个分组捕获的字符串，多个参数时将以元组形式返回；
 # 可以使用编号也可以使用别名，编号0代表整个匹配字符串，不填写参数返回goup(0)
-print 'm.goup()', m.group()
+print 'm.group()', m.group()
 # 以元组形式返回全部捕获的字符串
 print 'm.groups():', m.groups()
 # 返回有以别名的组，别名为健、捕获字符串为值的字典
