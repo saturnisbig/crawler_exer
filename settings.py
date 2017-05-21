@@ -5,6 +5,8 @@ import urllib2
 import re
 import random
 import lxml.html
+import json
+import cookielib
 
 USER_AGENT = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
@@ -28,19 +30,9 @@ USER_AGENT = [
 ]
 
 
-def get_proxy_ips(url='http://haoip.cc/tiqu.htm'):
-    # 已失效
-    headers = {'User-Agent': random.choice(USER_AGENT)}
-    request = urllib2.Request(url, headers=headers)
-    resp = urllib2.urlopen(request)
-    iplist = re.findall(r'r/>(.*?)<b', resp.read(), re.S)
-    iplist = [re.sub('\n', '', ip).strip() for ip in iplist]
-    return iplist
-    # print iplist
-
 def get_ip181_proxy(url='http://www.ip181.com/'):
     result = []
-    headers = make_header_by_file('ip181_headers.txt')
+    headers = make_headers_by_file('ip181_headers.txt')
     req = urllib2.Request(url, headers=headers)
     resp = urllib2.urlopen(req)
     html = resp.read()
@@ -54,13 +46,15 @@ def get_ip181_proxy(url='http://www.ip181.com/'):
         https = tds[3].strip().lower().split(',')
         if len(https) > 1:
             scheme = https[1]
+        else:
+            scheme = https[0]
         country = tds[5].strip()
         proxy = (ip, port, anonymity, scheme, country)
         result.append(proxy)
     return result
 
 
-def make_header_by_file(fname='headers.txt'):
+def make_headers_by_file(fname='headers.txt'):
     headers = {}
     with open(fname, 'r') as fd:
         for line in fd:
@@ -69,13 +63,35 @@ def make_header_by_file(fname='headers.txt'):
                 k = line[0:index]
                 v = line[index+1:]
                 headers[k] = v.strip()
+    with open('dic_'+fname, 'w') as wfd:
+        json_obj = json.dumps(headers)
+        wfd.write(json_obj)
     return headers
 
+def make_cookie(name, value, domain):
+    return cookielib.Cookie(
+        version=0,
+        name=name,
+        value=value,
+        port=None,
+        port_specified=False,
+        domain=domain,
+        domain_specified=True,
+        domain_initial_dot=False,
+        path="/",
+        path_specified=True,
+        secure=False,
+        expires=None,
+        discard=False,
+        comment=None,
+        comment_url=None,
+        rest=None
+    )
 
 if __name__ == "__main__":
     # url = 'http://haoip.cc/tiqu.htm'
     # get_proxy_ips(url)
-    # headers = make_header_by_file()
+    # headers = make_headers_by_file()
     # for k, v in headers.items():
     #     print k, v
     print(get_ip181_proxy())
